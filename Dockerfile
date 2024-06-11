@@ -23,7 +23,7 @@ RUN apt-get update -y && apt-get install libsnappy-dev -y
 WORKDIR /repos
 
 # Clone repo
-RUN git clone https://github.com/facebook/rocksdb.git
+RUN git clone https://github.com/taco-paco/rocksdb.git
 RUN git clone https://github.com/gflags/gflags.git
 
 COPY entrypoint.sh /entrypoint.sh
