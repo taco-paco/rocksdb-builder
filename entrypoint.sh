@@ -1,12 +1,17 @@
 #!/bin/bash
 
-# Compile gflags
 #readelf -r /lib/aarch64-linux-gnu/libgflags.a | egrep '(GOT|PLT|JU?MP_SLOT)'
+#ls /lib/aarch64-linux-gnu/cmake/zstd/
+#cat /lib/aarch64-linux-gnu/cmake/zstd/zstdConfig.cmake
+#cat /lib/aarch64-linux-gnu/cmake/zstd/zstdTargets-none.cmake
 
-#ls /lib/aarch64-linux-gnu/
-ls /lib/aarch64-linux-gnu/cmake
-exit
+#/usr/lib/aarch64-linux-gnu/libsnappy.a
+#/usr/lib/aarch64-linux-gnu/libzstd.a
 
+#readelf -r /usr/lib/aarch64-linux-gnu/libjemalloc.a |  egrep '(GOT|PLT|JU?MP_SLOT)'
+#exit
+
+# Compile gflags
 mkdir -p /repos/gflags/build
 cd /repos/gflags/build
 
@@ -14,7 +19,27 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local" -DBUILD_
 make
 make install
 
+# Compile snappy
+mkdir -p /repos/snappy/build
+cd /repos/snappy/build
 
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local" -DSNAPPY_BUILD_TESTS=OFF -DSNAPPY_BUILD_BENCHMARKS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+
+make -j4
+make install
+
+#readelf -r /usr/local/lib/libsnappy.a | egrep '(GOT|PLT|JU?MP_SLOT)'
+
+# Compile zstd
+mkdir -p /repos/zstd/build
+cd /repos/zstd/build
+
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local" -DZSTD_BUILD_SHARED=OFF
+
+make -j4
+make install
+
+# Compile rocketsdb
 # exit 0
 # Repo for cmake artifacts
 mkdir -p /repos/rocksdb/build
@@ -25,9 +50,10 @@ cd /repos/rocksdb/build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_GFLAGS=ON -DWITH_LZ4=ON \
   -DWITH_ZLIB=ON -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON \
   -DWITH_JEMALLOC=ON -DGFLAGS_SHARED=FALSE -DGFLAGS_NOTHREADS=FALSE  \
-  -Dgflags_DIR="/usr/local/lib/cmake/gflags"
+  -Dgflags_DIR="/usr/local/lib/cmake/gflags" \
+  -DSnappy_DIR="/usr/local/lib/cmake/Snappy"
 
-make
+make -j4
 
 ldd ./librocksdb.so
 

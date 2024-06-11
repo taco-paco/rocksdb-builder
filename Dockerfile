@@ -22,9 +22,14 @@ RUN apt-get update -y && apt-get install libsnappy-dev -y
 # Set workdir for repositories
 WORKDIR /repos
 
+# Add a build argument
+ARG CACHEBUST=2
+
 # Clone repo
 RUN git clone https://github.com/taco-paco/rocksdb.git
 RUN git clone https://github.com/gflags/gflags.git
+RUN git clone https://github.com/google/snappy.git
+RUN git clone git clone https://github.com/facebook/zstd.git
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
