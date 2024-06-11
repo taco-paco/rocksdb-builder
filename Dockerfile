@@ -15,7 +15,9 @@ RUN apt-get update -y && apt-get install libgflags-dev -y
 # Install liblz4-dev
 RUN apt-get update -y && apt-get install liblz4-dev -y
 # Install jemalloc
-RUN apt-get update -y && apt-get install libjemalloc-dev -y
+# RUN apt-get update -y && apt-get install libjemalloc-dev -y
+# Install autoconf
+RUN apt-get update -y && apt-get install autoconf -y
 # Install snappy
 RUN apt-get update -y && apt-get install libsnappy-dev -y
 
@@ -23,13 +25,14 @@ RUN apt-get update -y && apt-get install libsnappy-dev -y
 WORKDIR /repos
 
 # Add a build argument
-ARG CACHEBUST=2
+ARG CACHEBUST=3
 
 # Clone repo
 RUN git clone https://github.com/taco-paco/rocksdb.git
 RUN git clone https://github.com/gflags/gflags.git
 RUN git clone https://github.com/google/snappy.git
-RUN git clone git clone https://github.com/facebook/zstd.git
+RUN git clone https://github.com/facebook/zstd.git
+RUN git clone https://github.com/jemalloc/jemalloc.git
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
