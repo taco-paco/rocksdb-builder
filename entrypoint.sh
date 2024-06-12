@@ -40,11 +40,13 @@ make -j4
 make install
 
 # Compile jemalloc
-mkdir -p /repos/jemalloc
+cd /repos/jemalloc
 ./autogen.sh
+CFLAGS="-fPIC" ./configure --prefix=/usr
 
 make build_lib_static
 make install_lib_static
+make install_include
 
 # Compile rocketsdb
 # exit 0
