@@ -1,0 +1,8 @@
+FROM rocksdb-builder
+
+WORKDIR /example
+COPY example.cpp .
+
+ENV LD_LIBRARY_PATH=/tmp/rocksdb/lib
+RUN g++ -o ./example example.cpp -L/tmp/rocksdb/lib -lrocksdb -I/tmp/rocksdb/include
+ENTRYPOINT ["./example"]

@@ -75,7 +75,7 @@ COPY --from=zstd-builder /usr/local/zstd /usr/local
 COPY --from=jemalloc-builder /usr/local/jemalloc /usr
 
 WORKDIR /repos/rocksdb/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/output" \
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
     -DWITH_GFLAGS=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON \
     -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON \
     -DWITH_JEMALLOC=ON -DGFLAGS_SHARED=FALSE -DGFLAGS_NOTHREADS=FALSE  \
