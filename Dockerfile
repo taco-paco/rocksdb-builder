@@ -7,9 +7,7 @@ RUN apt-get update -y &&  \
 RUN apt-get update -y &&  \
     apt-get install -y liblz4-dev autoconf
 
-FROM rocksdb-base as zlib-builder
-
-# Clone zlib
+# Build zlib
 WORKDIR /repos
 RUN git clone https://github.com/madler/zlib.git
 
@@ -17,17 +15,21 @@ WORKDIR /repos/zlib
 ENV CFLAGS="-fPIC"
 RUN ./configure --static
 RUN make
-RUN make install prefix=/usr/local/zlib
+RUN make install prefix=/usr/local
+RUN unset CFLAGS
 
 FROM rocksdb-base as bz2-builder
+
+# Install prerequisites
+RUN apt-get update -y && apt-get install python3 -y
 
 # Clone bz2
 WORKDIR /repos
 RUN git clone https://gitlab.com/bzip2/bzip2.git
 
 WORKDIR /repos/bzip2/build
-RUN cmake .. -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF -DENABLE_STATIC_LIB_IS_PIC=ON
-RUN make -j4
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF -DENABLE_STATIC_LIB_IS_PIC=ON
+RUN make
 RUN make install
 
 FROM rocksdb-base as gflags-builder
@@ -90,20 +92,24 @@ WORKDIR /repos
 ARG CACHEBUST=0
 RUN git clone https://github.com/taco-paco/rocksdb.git
 
-# Copu artifacts from previous stages
+# Copy artifacts from previous stages
 COPY --from=gflags-builder /usr/local/gflags /usr/local
 COPY --from=snappy-builder /usr/local/snappy /usr/local
 COPY --from=zstd-builder /usr/local/zstd /usr/local
+COPY --from=bz2-builder /usr/local/bzip2/lib /usr/local/lib
+COPY --from=bz2-builder /usr/local/bzip2/include /usr/local/include
 COPY --from=jemalloc-builder /usr/local/jemalloc /usr
 
 WORKDIR /repos/rocksdb/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" -DCMAKE_PREFIX_PATH="/usr/local" \
     -DWITH_GFLAGS=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON \
     -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON \
     -DWITH_JEMALLOC=ON -DGFLAGS_SHARED=FALSE -DGFLAGS_NOTHREADS=FALSE  \
     -Dgflags_DIR="/usr/local/lib/cmake/gflags" \
     -DSnappy_DIR="/usr/local/lib/cmake/Snappy" \
-    -Dzstd_DIR="/usr/local/lib/cmake/zstd"
+    -Dzstd_DIR="/usr/local/lib/cmake/zstd" \
+    -DBZIP2_LIBRARIES="/usr/local/lib/libbz2_static.a" \
+    -DBZIP2_INCLUDE_DIR="/usr/local/include"
 
 RUN make -j4
 RUN make install
