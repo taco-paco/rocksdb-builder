@@ -5,8 +5,30 @@ RUN apt-get update -y &&  \
     apt-get install -y g++ git cmake
 
 RUN apt-get update -y &&  \
-    apt-get install -y zlib1g-dev libbz2-dev \
-    liblz4-dev autoconf
+    apt-get install -y liblz4-dev autoconf
+
+FROM rocksdb-base as zlib-builder
+
+# Clone zlib
+WORKDIR /repos
+RUN git clone https://github.com/madler/zlib.git
+
+WORKDIR /repos/zlib
+ENV CFLAGS="-fPIC"
+RUN ./configure --static
+RUN make
+RUN make install prefix=/usr/local/zlib
+
+FROM rocksdb-base as bz2-builder
+
+# Clone bz2
+WORKDIR /repos
+RUN git clone https://gitlab.com/bzip2/bzip2.git
+
+WORKDIR /repos/bzip2/build
+RUN cmake .. -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF -DENABLE_STATIC_LIB_IS_PIC=ON
+RUN make -j4
+RUN make install
 
 FROM rocksdb-base as gflags-builder
 
