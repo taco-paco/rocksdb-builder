@@ -20,15 +20,13 @@ RUN unset CFLAGS
 
 FROM rocksdb-base as bz2-builder
 
-# Install prerequisites
-RUN apt-get update -y && apt-get install python3 -y
-
 # Clone bz2
 WORKDIR /repos
 RUN git clone https://gitlab.com/bzip2/bzip2.git
 
 WORKDIR /repos/bzip2/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF -DENABLE_STATIC_LIB_IS_PIC=ON
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON \
+    -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF -DENABLE_STATIC_LIB_IS_PIC=ON -DENABLE_TESTS=OFF
 RUN make
 RUN make install
 
@@ -40,7 +38,8 @@ RUN git clone https://github.com/gflags/gflags.git
 
 # Compile and install gflags artifacts
 WORKDIR /repos/gflags/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/gflags" -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/gflags" -DBUILD_STATIC_LIBS=ON \
+    -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 RUN make
 RUN make install
 
@@ -52,7 +51,8 @@ RUN git clone https://github.com/google/snappy.git
 
 # Compile and install gflags artifacts
 WORKDIR /repos/snappy/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/snappy" -DSNAPPY_BUILD_TESTS=OFF -DSNAPPY_BUILD_BENCHMARKS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/snappy" -DSNAPPY_BUILD_TESTS=OFF \
+     -DSNAPPY_BUILD_BENCHMARKS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 RUN make -j4
 RUN make install
 
@@ -64,7 +64,8 @@ RUN git clone https://github.com/facebook/zstd.git
 
 # Compilation magic
 WORKDIR /repos/zstd/build/cmake/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/zstd" -DZSTD_BUILD_SHARED=OFF -DZSTD_BUILD_STATIC=ON
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/zstd" \
+    -DZSTD_BUILD_SHARED=OFF -DZSTD_BUILD_STATIC=ON
 RUN make -j4
 RUN make install
 
@@ -101,7 +102,7 @@ COPY --from=bz2-builder /usr/local/bzip2/include /usr/local/include
 COPY --from=jemalloc-builder /usr/local/jemalloc /usr
 
 WORKDIR /repos/rocksdb/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" -DCMAKE_PREFIX_PATH="/usr/local" \
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
     -DWITH_GFLAGS=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON \
     -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON \
     -DWITH_JEMALLOC=ON -DGFLAGS_SHARED=FALSE -DGFLAGS_NOTHREADS=FALSE  \
