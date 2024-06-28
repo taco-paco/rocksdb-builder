@@ -102,6 +102,7 @@ COPY --from=bz2-builder /usr/local/bzip2/include /usr/local/include
 COPY --from=jemalloc-builder /usr/local/jemalloc /usr
 
 WORKDIR /repos/rocksdb/build
+ENV LDFLAGS="-L/usr/local/lib"
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
     -DWITH_GFLAGS=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON \
     -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON \
@@ -109,6 +110,8 @@ RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
     -Dgflags_DIR="/usr/local/lib/cmake/gflags" \
     -DSnappy_DIR="/usr/local/lib/cmake/Snappy" \
     -Dzstd_DIR="/usr/local/lib/cmake/zstd" \
+    -DZLIB_LIBRARY=/usr/local/lib/libz.a \
+    -DZLIB_INCLUDE_DIR=/usr/local/include \
     -DBZIP2_LIBRARIES="/usr/local/lib/libbz2_static.a" \
     -DBZIP2_INCLUDE_DIR="/usr/local/include"
 
