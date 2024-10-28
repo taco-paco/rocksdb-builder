@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim as rocksdb-base
+FROM debian:12.7-slim as rocksdb-base
 
 # Install neccesities
 RUN apt-get update -y &&  \
@@ -60,7 +60,7 @@ FROM rocksdb-base as zstd-builder
 
 # Clone zstd
 WORKDIR /repos
-RUN git clone https://github.com/facebook/zstd.git
+RUN git clone --depth 1 --branch v1.5.6 https://github.com/facebook/zstd.git
 
 # Compilation magic
 WORKDIR /repos/zstd/build/cmake/build
@@ -91,7 +91,12 @@ FROM rocksdb-base as rocksdb-builder
 # Clone repo
 WORKDIR /repos
 ARG CACHEBUST=0
+
+RUN git config --global http.version HTTP/1.1
+RUN git config --global http.postBuffer 157286400
 RUN git clone https://github.com/taco-paco/rocksdb.git
+RUN git config --global --unset http.postBuffer
+RUN git config --global --unset http.version
 
 # Copy artifacts from previous stages
 COPY --from=gflags-builder /usr/local/gflags /usr/local
@@ -105,7 +110,9 @@ WORKDIR /repos/rocksdb/build
 ENV LDFLAGS="-L/usr/local/lib"
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
     -DWITH_GFLAGS=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON \
-    -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON \
+    -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON  \
+    # enable RTTI for allocator implementation
+    -DUSE_RTTI=ON \
     -DWITH_JEMALLOC=ON -DGFLAGS_SHARED=FALSE -DGFLAGS_NOTHREADS=FALSE  \
     -Dgflags_DIR="/usr/local/lib/cmake/gflags" \
     -DSnappy_DIR="/usr/local/lib/cmake/Snappy" \

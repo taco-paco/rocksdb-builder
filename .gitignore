@@ -1,6 +1,12 @@
 # IDE
 .idea
 
+# CMake
+cmake-build-debug
+
 # Artifacts
 artifacts
 example
+
+# macOS related
+.DS_Store
