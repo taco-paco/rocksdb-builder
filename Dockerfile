@@ -103,7 +103,8 @@ FROM rocksdb-base as rocksdb-builder
 
 # Clone repo
 WORKDIR /repos
-ARG CACHEBUST=0
+ARG CACHEBUST=2
+ARG ALLOCATOR=mimalloc
 
 RUN git config --global http.version HTTP/1.1
 RUN git config --global http.postBuffer 157286400
@@ -112,35 +113,46 @@ RUN git config --global --unset http.postBuffer
 RUN git config --global --unset http.version
 
 # Copy artifacts from previous stages
+COPY --from=jemalloc-builder /usr/local/jemalloc /usr/local/jemalloc
+COPY --from=mimalloc-builder /usr/local/mimalloc /usr/local/mimalloc
 COPY --from=gflags-builder /usr/local/gflags /usr/local
 COPY --from=snappy-builder /usr/local/snappy /usr/local
 COPY --from=zstd-builder /usr/local/zstd /usr/local
 COPY --from=bz2-builder /usr/local/bzip2/lib /usr/local/lib
 COPY --from=bz2-builder /usr/local/bzip2/include /usr/local/include
-COPY --from=jemalloc-builder /usr/local/jemalloc /usr
+
+# Volume to pick up artifacts from
+VOLUME ["/output"]
 
 WORKDIR /repos/rocksdb/build
 ENV LDFLAGS="-L/usr/local/lib"
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
-    -DWITH_GFLAGS=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON \
-    -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON  \
-    # enable RTTI for allocator implementation
-    -DUSE_RTTI=ON \
-    -DWITH_JEMALLOC=ON -DGFLAGS_SHARED=FALSE -DGFLAGS_NOTHREADS=FALSE  \
-    -Dgflags_DIR="/usr/local/lib/cmake/gflags" \
-    -DSnappy_DIR="/usr/local/lib/cmake/Snappy" \
-    -Dzstd_DIR="/usr/local/lib/cmake/zstd" \
-    -DZLIB_LIBRARY=/usr/local/lib/libz.a \
-    -DZLIB_INCLUDE_DIR=/usr/local/include \
-    -DBZIP2_LIBRARIES="/usr/local/lib/libbz2_static.a" \
-    -DBZIP2_INCLUDE_DIR="/usr/local/include"
+RUN if [ "$ALLOCATOR" = "jemalloc" ]; then \
+      export EXTRA_CMAKE_FLAGS="-DWITH_JEMALLOC=ON -DJEMALLOC_ROOT_DIR=\"/usr/local/jemalloc/\" "; \
+    elif [ "$ALLOCATOR" = "mimalloc" ]; then \
+      export EXTRA_CMAKE_FLAGS="-DWITH_MIMALLOC=ON -Dmimalloc_DIR=\"/usr/local/mimalloc/lib/cmake/mimalloc-1.8\" "; \
+      echo $EXTRA_CMAKE_FLAGS; \
+    else \
+      echo "Error: Invalid allocator specified: $ALLOCATOR" >&2; \
+      exit 1; \
+    fi && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
+        $EXTRA_CMAKE_FLAGS -DWITH_GFLAGS=ON -DWITH_LZ4=ON \
+        -DWITH_ZLIB=ON -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON  \
+        # enable RTTI for allocator implementation
+        -DUSE_RTTI=ON \
+        -DGFLAGS_SHARED=FALSE -DGFLAGS_NOTHREADS=FALSE  \
+        -Dgflags_DIR="/usr/local/lib/cmake/gflags" \
+        -DSnappy_DIR="/usr/local/lib/cmake/Snappy" \
+        -Dzstd_DIR="/usr/local/lib/cmake/zstd" \
+        -DZLIB_LIBRARY=/usr/local/lib/libz.a \
+        -DZLIB_INCLUDE_DIR=/usr/local/include \
+        -DBZIP2_LIBRARIES="/usr/local/lib/libbz2_static.a" \
+        -DBZIP2_INCLUDE_DIR="/usr/local/include"
 
 RUN cmake --build . -j4
 RUN cmake --install .
 
-VOLUME ["/output"]
-
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+COPY prepare_artifacts.sh /prepare_artifacts.sh
+RUN chmod +x /prepare_artifacts.sh
+ENTRYPOINT ["/prepare_artifacts.sh"]
 

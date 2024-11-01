@@ -24,6 +24,7 @@ int main() {
         return 1;
     }
 
+    if
     std::cout << "RocksDB opened successfully with Snappy compression!" << std::endl;
 
     std::string key = "key";
