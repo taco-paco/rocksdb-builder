@@ -77,7 +77,6 @@ RUN git clone https://github.com/jemalloc/jemalloc.git
 
 # Compile jemalloc
 WORKDIR /repos/jemalloc
-
 # Pass fPIC and setup artifacts location
 RUN ./autogen.sh && CFLAGS="-fPIC" ./configure --prefix=/usr/local/jemalloc
 
@@ -85,6 +84,20 @@ RUN ./autogen.sh && CFLAGS="-fPIC" ./configure --prefix=/usr/local/jemalloc
 RUN make build_lib_static
 RUN make install_lib_static
 RUN make install_include
+
+FROM rocksdb-base as mimalloc-builder
+
+# Clone mimalloc
+WORKDIR /repos
+RUN git clone https://github.com/microsoft/mimalloc.git
+
+# Compile mimalloc
+WORKDIR /repos/mimalloc/build
+RUN cmake -DMI_BUILD_STATIC=ON -DMI_BUILD_SHARED=OFF -DMI_BUILD_TESTS=OFF \
+    -DCMAKE_BUILD_TYPE=Release -DMI_OVERRIDE=ON -DCMAKE_INSTALL_PREFIX="/usr/local/mimalloc" ..
+
+RUN make
+RUN make install
 
 FROM rocksdb-base as rocksdb-builder
 
