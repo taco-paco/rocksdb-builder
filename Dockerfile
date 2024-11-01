@@ -27,8 +27,8 @@ RUN git clone https://gitlab.com/bzip2/bzip2.git
 WORKDIR /repos/bzip2/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON \
     -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF -DENABLE_STATIC_LIB_IS_PIC=ON -DENABLE_TESTS=OFF
-RUN make
-RUN make install
+RUN cmake --build .
+RUN cmake --install .
 
 FROM rocksdb-base as gflags-builder
 
@@ -40,8 +40,8 @@ RUN git clone https://github.com/gflags/gflags.git
 WORKDIR /repos/gflags/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/gflags" -DBUILD_STATIC_LIBS=ON \
     -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-RUN make
-RUN make install
+RUN cmake --build .
+RUN cmake --install .
 
 FROM rocksdb-base as snappy-builder
 
@@ -53,8 +53,8 @@ RUN git clone https://github.com/google/snappy.git
 WORKDIR /repos/snappy/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/snappy" -DSNAPPY_BUILD_TESTS=OFF \
      -DSNAPPY_BUILD_BENCHMARKS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-RUN make -j4
-RUN make install
+RUN cmake --build . -j4
+RUN cmake --install .
 
 FROM rocksdb-base as zstd-builder
 
@@ -66,8 +66,8 @@ RUN git clone --depth 1 --branch v1.5.6 https://github.com/facebook/zstd.git
 WORKDIR /repos/zstd/build/cmake/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/zstd" \
     -DZSTD_BUILD_SHARED=OFF -DZSTD_BUILD_STATIC=ON
-RUN make -j4
-RUN make install
+RUN cmake --build . -j4
+RUN cmake --install .
 
 FROM rocksdb-base as jemalloc-builder
 
@@ -96,8 +96,8 @@ WORKDIR /repos/mimalloc/build
 RUN cmake -DMI_BUILD_STATIC=ON -DMI_BUILD_SHARED=OFF -DMI_BUILD_TESTS=OFF \
     -DCMAKE_BUILD_TYPE=Release -DMI_OVERRIDE=ON -DCMAKE_INSTALL_PREFIX="/usr/local/mimalloc" ..
 
-RUN make
-RUN make install
+RUN cmake --build .
+RUN cmake --install .
 
 FROM rocksdb-base as rocksdb-builder
 
@@ -135,8 +135,8 @@ RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
     -DBZIP2_LIBRARIES="/usr/local/lib/libbz2_static.a" \
     -DBZIP2_INCLUDE_DIR="/usr/local/include"
 
-RUN make -j4
-RUN make install
+RUN cmake --build . -j4
+RUN cmake --install .
 
 VOLUME ["/output"]
 
