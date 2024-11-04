@@ -7,13 +7,29 @@ RUN apt-get update -y &&  \
 RUN apt-get update -y &&  \
     apt-get install -y liblz4-dev autoconf
 
+ARG BUILD_TYPE=Release
+ENV BUILD_TYPE=${BUILD_TYPE}
+
+# Debuging container outside
+RUN if [ "$BUILD_TYPE" = "Debug" ]; then \
+      apt-get update -y && apt-get -y install gdb gdbserver; \
+    fi
+
 # Build zlib
 WORKDIR /repos
 RUN git clone https://github.com/madler/zlib.git
 
 WORKDIR /repos/zlib
 ENV CFLAGS="-fPIC"
-RUN ./configure --static
+RUN if [ "$BUILD_TYPE" = "Release" ]; then \
+      ./configure --static; \
+    elif [ "$BUILD_TYPE" = "Debug" ]; then \
+      ./configure --static --debug; \
+    else \
+      echo "Error: Invalid BUILD_TYPE specified: $BUILD_TYPE" >&2; \
+      exit 1; \
+    fi
+
 RUN make
 RUN make install prefix=/usr/local
 RUN unset CFLAGS
@@ -25,7 +41,7 @@ WORKDIR /repos
 RUN git clone https://gitlab.com/bzip2/bzip2.git
 
 WORKDIR /repos/bzip2/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON \
+RUN cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX="/usr/local/bzip2" -DENABLE_LIB_ONLY=ON \
     -DENABLE_STATIC_LIB=ON -DENABLE_SHARED_LIB=OFF -DENABLE_STATIC_LIB_IS_PIC=ON -DENABLE_TESTS=OFF
 RUN cmake --build .
 RUN cmake --install .
@@ -38,8 +54,8 @@ RUN git clone https://github.com/gflags/gflags.git
 
 # Compile and install gflags artifacts
 WORKDIR /repos/gflags/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/gflags" -DBUILD_STATIC_LIBS=ON \
-    -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+RUN cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX="/usr/local/gflags" -DBUILD_STATIC_LIBS=ON \
+    -DBUILD_SHARED_LIBS=OFF -DBUILD_gflags_nothreads_LIB=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 RUN cmake --build .
 RUN cmake --install .
 
@@ -51,7 +67,7 @@ RUN git clone https://github.com/google/snappy.git
 
 # Compile and install gflags artifacts
 WORKDIR /repos/snappy/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/snappy" -DSNAPPY_BUILD_TESTS=OFF \
+RUN cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX="/usr/local/snappy" -DSNAPPY_BUILD_TESTS=OFF \
      -DSNAPPY_BUILD_BENCHMARKS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 RUN cmake --build . -j4
 RUN cmake --install .
@@ -64,7 +80,7 @@ RUN git clone --depth 1 --branch v1.5.6 https://github.com/facebook/zstd.git
 
 # Compilation magic
 WORKDIR /repos/zstd/build/cmake/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/usr/local/zstd" \
+RUN cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX="/usr/local/zstd" \
     -DZSTD_BUILD_SHARED=OFF -DZSTD_BUILD_STATIC=ON
 RUN cmake --build . -j4
 RUN cmake --install .
@@ -78,7 +94,11 @@ RUN git clone https://github.com/jemalloc/jemalloc.git
 # Compile jemalloc
 WORKDIR /repos/jemalloc
 # Pass fPIC and setup artifacts location
-RUN ./autogen.sh && CFLAGS="-fPIC" ./configure --prefix=/usr/local/jemalloc
+RUN if ["$BUILD_TYPE" = "Release"]; then  \
+    ./autogen.sh && CFLAGS="-fPIC" ./configure --prefix=/usr/local/jemalloc; \
+    else \
+    ./autogen.sh && CFLAGS="-fPIC" ./configure --enable-debug --prefix=/usr/local/jemalloc; \
+    fi
 
 # Build & install static lib
 RUN make build_lib_static
@@ -93,8 +113,8 @@ RUN git clone https://github.com/microsoft/mimalloc.git
 
 # Compile mimalloc
 WORKDIR /repos/mimalloc/build
-RUN cmake -DMI_BUILD_STATIC=ON -DMI_BUILD_SHARED=OFF -DMI_BUILD_TESTS=OFF \
-    -DCMAKE_BUILD_TYPE=Release -DMI_OVERRIDE=ON -DCMAKE_INSTALL_PREFIX="/usr/local/mimalloc" ..
+RUN cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE  -DMI_BUILD_STATIC=ON -DMI_BUILD_SHARED=OFF \
+     -DMI_BUILD_TESTS=OFF -DMI_OVERRIDE=ON -DCMAKE_INSTALL_PREFIX="/usr/local/mimalloc" ..
 
 RUN cmake --build .
 RUN cmake --install .
@@ -135,7 +155,10 @@ RUN if [ "$ALLOCATOR" = "jemalloc" ]; then \
       echo "Error: Invalid allocator specified: $ALLOCATOR" >&2; \
       exit 1; \
     fi && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
+    if [ "$BUILD_TYPE" = "Debug" ]; then \
+      EXTRA_CMAKE_FLAGS="$EXTRA_CMAKE_FLAGS -DWITH_TESTS=OFF"; \
+    fi && \
+    cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX="/tmp/rocksdb" \
         $EXTRA_CMAKE_FLAGS -DWITH_GFLAGS=ON -DWITH_LZ4=ON \
         -DWITH_ZLIB=ON -DWITH_SNAPPY=ON -DWITH_ZSTD=ON -DWITH_BZ2=ON  \
         # enable RTTI for allocator implementation

@@ -3,6 +3,7 @@
 
 # CMake
 cmake-build-debug
+example/cmake-build-*
 
 # Artifacts
 artifacts
