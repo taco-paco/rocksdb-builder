@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25.1)
+cmake_minimum_required(VERSION 3.22.1)
 project(rocksdb_example)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -23,10 +23,6 @@ if (UNIX AND NOT APPLE)
             IMPORTED_SONAME_DEBUG "@rpath/librocksdb.so.9"
     )
 endif ()
-
-execute_process(COMMAND ls /tmp/rocksdb/lib/
-        RESULT_VARIABLE LS_RESULT)
-message(STATUS "Library check result: ${LS_RESULT}")
 
 # Add executable
 add_executable(rocksdb_example example.cpp)

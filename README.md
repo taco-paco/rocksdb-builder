@@ -16,7 +16,7 @@ To build in _debug_ with _jemalloc_, pass arguments:
 docker build --build-arg BUILD_TYPE=Debug --build-arg ALLOCATOR=jemalloc -t some-name 
 ```
 
-Notice that _release_ version with mimalloc compiled by default.
+Notice that _release_ version with _mimalloc_ compiled by default.
 ## Export artifacts
 To export artifacts simply mount a volume and run resulting _some-name_ image. 
 Example can be seen in _example/build_and_run.sh_
