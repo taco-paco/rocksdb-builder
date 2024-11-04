@@ -1,0 +1,10 @@
+FROM rocksdb-builder
+
+WORKDIR /example
+COPY ./example .
+
+WORKDIR /example/build
+RUN cmake -DRocksdb_ROOT="/tmp/rocksdb" -DCMAKE_BUIlD_TYPE=Release ..
+RUN cmake --build .
+
+ENTRYPOINT ["./rocksdb_example"]
