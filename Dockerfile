@@ -1,9 +1,26 @@
-FROM debian:12.7-slim as rocksdb-base
+#FROM debian:12.7-slim as rocksdb-base
+FROM ubuntu:20.04 as rocksdb-base
 
-# Install neccesities
-RUN apt-get update -y &&  \
-    apt-get install -y g++ git cmake
+# Install essentials
+RUN apt-get update -y && \
+   DEBIAN_FRONTEND=noninteractive apt-get install -y g++ make git wget
 
+# Install cmake
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+      CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.tar.gz"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+      CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-aarch64.tar.gz"; \
+    else \
+      echo "Unsupported platform. Create an issue if supposed to be supported."; \
+      exit 1; \
+    fi && \
+    wget $CMAKE_URL && \
+        tar -zxvf cmake-3.22.1-linux-$ARCH.tar.gz -C /opt && \
+        ln -s /opt/cmake-3.22.1-linux-$ARCH/bin/cmake /usr/local/bin/cmake && \
+        rm cmake-3.22.1-linux-$ARCH.tar.gz
+
+# Install third-party
 RUN apt-get update -y &&  \
     apt-get install -y liblz4-dev autoconf
 

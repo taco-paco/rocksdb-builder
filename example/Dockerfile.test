@@ -1,7 +1,7 @@
 FROM rocksdb-builder
 
 WORKDIR /example
-COPY ./example .
+COPY . .
 
 WORKDIR /example/build
 RUN cmake -DRocksdb_ROOT="/tmp/rocksdb" -DCMAKE_BUIlD_TYPE=Release ..
